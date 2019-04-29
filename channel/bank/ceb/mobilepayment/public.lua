@@ -33,7 +33,7 @@ local mt = { __index = _M }
 --  status=0时,必须验签
 -- @param data 待组包数据
 -- @return 通讯结果
-local ini  = iniparser.get("../ips/conf/mobileceb.ini")
+local ini  = iniparser.get("../dca/conf/mobileceb.ini")
 function _M.comm( data, router )
 
 	local conf = ini.mobilepayment

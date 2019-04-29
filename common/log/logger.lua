@@ -303,6 +303,12 @@ local cache_chmf_file = { }
 function _M.channelmonitor( mfields, mdefine, start_time, _logpath )
 
 	local logpath = _logpath or _M.path
+	
+	local ff, err = io_open( logpath, "r" )
+	if not ff then
+		os_execute( str_fmt("mkdir %s -p", logpath) )
+	end 
+	ff:close()
 
 	-- 1. 获取文件名
 	local file = str_fmt( "%s/monitor%s.log", logpath, os_date( "%Y%m%d" ) )										

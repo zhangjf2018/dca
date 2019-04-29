@@ -46,9 +46,11 @@ function _M.execute( main, atexit )
 	end
 
 	-- 响应码描述统一处理
+	--[[
 	if result.retmsg == nil or #result.retmsg == 0 then
 		result.retmsg = errinfo.get_retmsg( result.retcode )
 	end
+	]]--
 
 	--[[
 	local env = getfenv(1)
@@ -168,9 +170,13 @@ end
 
 function _M.isNull( str )
 	if str == "null" or str == ngx.null then
-		return nil
+		return true
 	end
-	return str
+	return false
+end
+
+function _M.isNotNull( str )
+	return not _M.isNull( str )
 end
 
 function _M.isEmpty( str )
@@ -178,6 +184,10 @@ function _M.isEmpty( str )
 		return true
 	end
 	return false
+end
+
+function _M.isNotEmpty( str )
+	return not _M.isEmpty( str )
 end
 
 return _M

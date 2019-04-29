@@ -6,15 +6,17 @@
 -- Copyright (C) 2016
 ---------------------------------------- 
 
-local mysql  = require("resty.mysql")
-local logger = loadmod("common.log.log")
+local mysql      = require("resty.mysql")
+local logger     = loadmod("common.log.log")
 local mysql_conf = loadmod("conf.mysqlconf")
-local log    = logger.log
+local log        = logger.log
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
-local TIME_OUT = 10 * 1000
+local TIME_OUT  = 10
+local POOL_SIZE = 100
+local IDLE_TIME = 60
 
 function _M.new( self, db_config, timeout  )
     local db, err = mysql:new()
@@ -23,9 +25,17 @@ function _M.new( self, db_config, timeout  )
         return nil , "failed to instantiate mysql"
     end
     
-    TIME_OUT = timeout or TIME_OUT
-    db:set_timeout( TIME_OUT ) -- 10 second
     local options = db_config or mysql_conf.options
+    timeout = timeout or options.timeout
+    if not timeout or timeout == 0 then
+    	timeout = nil
+    else
+    	TIME_OUT = timeout 
+    end
+    
+    TIME_OUT = TIME_OUT * 1000
+    db:set_timeout( TIME_OUT ) -- 10 second
+    
     local ok, err, errno, sqlstate = db:connect( options )
     if not ok then
 		log("connect mysql error!")
@@ -37,7 +47,7 @@ function _M.new( self, db_config, timeout  )
     if not res then
         return nil, "fail query:" .. (err or "nil")..", errno:"..(errno or "nil")..", sqlstate:"..(sqlstate or "nil")
     end
-    return setmetatable({ db = db }, mt)
+    return setmetatable({ db = db, conf = options }, mt)
 end
 
 -- 放回连接池
@@ -49,7 +59,10 @@ function _M.close( self )
 		end
     -- with 10 seconds max idle timeout
     -- put it into the connection pool of size 100,
-    local ok, err = conn:set_keepalive( 60*1000, 200 )
+    POOL_SIZE = self.conf.pool_size or POOL_SIZE
+    IDLE_TIME = self.conf.idle_time or IDLE_TIME
+    IDLE_TIME = IDLE_TIME * 1000
+    local ok, err = conn:set_keepalive( IDLE_TIME, POOL_SIZE )
     if not ok then
         log( "failed to set keepalive: " .. err )
     end

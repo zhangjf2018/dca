@@ -6,16 +6,16 @@
 -- Copyright (C) 2016
 ---------------------------------------- 
 
-local tools  = loadmod("common.tools.tools")
-local load_lua = tools.load_lua
-local trim   = tools.trim
-local commtool = loadmod("common.tools.commtool")
-local ssntool = loadmod("common.tools.next")
-local get_sys_ssn = ssntool.get_ssn 
+local tools         = loadmod("common.tools.tools")
+local load_lua      = tools.load_lua
+local trim          = tools.trim
+local commtool      = loadmod("common.tools.commtool")
+local ssntool       = loadmod("common.tools.next")
+local get_sys_ssn   = ssntool.get_ssn 
 local string_format = string.format
-local string_gsub = string.gsub
-local comm_valid = loadmod("common.validator.comm_valid")
-local args_valid = comm_valid.args_valid
+local string_gsub   = string.gsub
+local comm_valid    = loadmod("common.validator.comm_valid")
+local args_valid    = comm_valid.args_valid
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }

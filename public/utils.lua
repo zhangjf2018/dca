@@ -29,9 +29,9 @@ function _M.getssn( step )
 end
 
 function _M.log_args( args )
-	local tmp = "请求参数 : \r\n"
+	local tmp = "REQUEST ARGS : \r\n"
 	for i,v in pairs ( args ) do
-		local tm = string_format("%15s : %s\r\n", i,v)
+		local tm = string_format("[%15s]:[%s]\r\n", i,v)
 		tmp = tmp .. tm
 	end
 	log( tmp )

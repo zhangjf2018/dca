@@ -14,6 +14,8 @@ local sha      = loadmod("common.secret.sha")
 local sha256   = sha.sha256
 local hmactool = loadmod("common.secret.hmac")
 local hmac     = hmactool.hmac
+local logger   = loadmod("common.log.log")
+local log      = logger.log
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }

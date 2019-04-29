@@ -69,7 +69,7 @@ _M.MISS_PARAM_BIZ_CONTENT = { retcode = "1225", retmsg = "解密失败,参数biz
 
 ----------------------------------------------------------------------
 local iniparser = loadmod("common.parser.iniparser")
-local ini = iniparser.get("../ips/conf/errmsg.ini")
+local ini = iniparser.get("../dca/conf/errmsg.ini")
 local errmap = ini.errmap
 
 function _M.get_retmsg( retcode )

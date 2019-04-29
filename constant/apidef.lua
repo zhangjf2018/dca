@@ -17,12 +17,12 @@ _M.define = {
 	version       = { fmt = "^((1.0))$",                          mandatory = false },
 	charset       = { fmt = "^(?i)((UTF-8))$",                    mandatory = false },
 	sign_type     = { fmt = "^((MD5)|(SHA256)|(HMAC-SHA256))$",   mandatory = false },
+	enc_type      = { fmt = "^((AES256)|(AES128)|(RSA))$",        mandatory = false },
+	biz_content   = { fmt = "^.{1,3096}$",                        mandatory = false },
+	
 	nonce_str     = { fmt = "^.{1,32}$",                          mandatory = true  },
 	sign          = { fmt = "^.{1,128}$",                         mandatory = true  },
-	
-	mch_id        = { fmt = "^.{1,15}$",                          mandatory = true  }, 
-	enc_type      = { fmt = "^((AES256)|(AES128)|(RSA))$",                    mandatory = false },
-	biz_content   = { fmt = "^.{1,3096}$",                        mandatory = false },
+	mch_id        = { fmt = "^.{1,15}$",                          mandatory = true  },
 }
 
 return _M

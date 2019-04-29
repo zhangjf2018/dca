@@ -18,6 +18,7 @@ local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
 local mysql = loadmod("common.mysql.mysql")
+local conf  = loadmod("conf.conf")
 
 function _M.gen_insert_sql(tablename, clos) 
 
@@ -90,11 +91,11 @@ end
 function _M.get_conn( db )
 	local _err = ""
 	if not db then
-		db , _err = mysql:new()
+		db , _err = mysql:new(conf.mysql)
 	end
 	
 	if not db then
-		log("数据库连接失败: " .. _err)
+		log("数据库连接失败: " .. tostring(_err))
 	end
 	
 	return db

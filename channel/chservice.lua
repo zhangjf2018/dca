@@ -44,7 +44,7 @@ end
 
 function _M.process( script, func, args, router )
 	local tv = _time.gettimeofday()
-	local trans_start_time  = os.date( "%Y-%m-%d %H:%M:%S", tv.sec ) .. "." .. string.format( "%03d", math.floor( tv.usec/1000000 ) )
+	local trans_start_time  = os.date( "%Y-%m-%d %H:%M:%S", tv.sec ) .. "." .. string.format( "%03d", math.floor( tv.usec/1000 ) )
 	
 	local ok, result = pcall( main, script, func, args, router )
 	if type(result) ~= "table" then
