@@ -60,10 +60,6 @@ end
 
 function _M.check_merchant_product( args )
 	local product_id, uri = product.get_product_id()
-	if not product_id then
-		log("服务接口不存在"..uri)
-		throw(errinfo.DB_ERROR, "服务接口不存在")
-	end
 
 	local mch_id = args.mch_id
 	local status = redis_merchantproduct.query_merchant_product_status_by(mch_id, product_id)
@@ -86,6 +82,7 @@ function _M.check_merchant_product( args )
 		log(string_format("商户[%s]未授权产品[%s],URI[%s]", mch_id, product_id, uri))
 		throw(errinfo.DB_ERROR, "未授权访问")
 	end
+	return product_id
 	
 end
 

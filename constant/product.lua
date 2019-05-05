@@ -25,6 +25,10 @@ function _M.get_product_id( )
 	local b_uri = string_gsub( ngx.var.uri, "/", "." )
 	b_uri = string_sub(b_uri, 2)
 	local product_id = PRODUCT_URL[ b_uri ]
+	if not product_id then
+		log("服务接口不存在"..uri)
+		throw(errinfo.DB_ERROR, "服务接口不存在")
+	end
 	return product_id, b_uri
 end
 

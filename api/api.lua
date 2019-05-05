@@ -43,6 +43,7 @@ local secret_tool      = loadmod("public.secret_tool")
 local secdecrypt       = secret_tool.decrypt
 
 local merchantctl      = loadmod("database.public.merchantctl")
+local merchantproduct  = loadmod("database.redis.merchantproductdao")
 
 -- Global method 全局函数定义 (减少require代码) -- 
 errinfo          = loadmod("constant.errinfo")
@@ -89,6 +90,16 @@ local function query_check_merchantctl( args )
 	-- 检查状态等
 	merchantctl.check_merchantctl( ctl_info )
 	merchantctl.check_merchant_product( args )
+	
+	local remain_count = merchantproduct.product_fee_count_by( args.mch_id )
+	if not remain_count then
+		throw( errinfo.DB_ERROR)
+	end
+	log("剩余次数："..tostring(remain_count))
+	if tonumber(remain_count) < 0 then
+		throw( errinfo.DB_ERROR, "超出调用次数" )
+	end
+	
 	
 	return ctl_info
 end
@@ -138,7 +149,7 @@ local function ex_main(  )
     local resp = json_encode( result )
  		ngx.say( resp ) -- 结果响应 json 数据
  		
- 		local temp = "响应参数:\r\n"..resp .. "\r\n" .. "##########END PROCESS!##########"
+ 		local temp = "RESPONSE ARGS:\r\n"..resp .. "\r\n" .. "##########END PROCESS!##########"
  		
     log(temp)
 		monitor( args, result )
