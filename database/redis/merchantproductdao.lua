@@ -92,7 +92,7 @@ function _M.product_fee_count_by( mch_id )
 		log(string_format("商户[%s][%s]取计数器失败,%s", mch_id, product_id, tostring(err)))
 		return nil
 	end
-	
+
 	if isNull( res ) or isEmpty( res ) then
 		log(string_format("商户[%s][%s]计数器Redis未配置,%s", mch_id, product_id, tostring(err)))
 		return nil
