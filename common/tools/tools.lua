@@ -180,6 +180,12 @@ function _M.isNotNull( str )
 end
 
 function _M.isEmpty( str )
+	if type( str ) == "table" then
+		if not next(str) then
+			return true
+		end
+		return false
+	end
 	if str == nil or #str == 0 then
 		return true
 	end

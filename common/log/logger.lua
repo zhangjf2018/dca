@@ -104,6 +104,10 @@ _M.DAY  = 1
 _M.HOUR = 2
 _M.rotateType = _M.DAY
 
+_M.INFO  = "INFO"
+_M.ERROR = "ERROR"
+_M.WARN  = "WARN"
+
 --- 设置记录日志文件的类型。
 -- @param rotateType 要设定的类型。 
 -- @return 没有返回。
@@ -150,13 +154,15 @@ end
 -- @return 没有返回
 -- @usage logger.log("retcode = " .. retcode)
 local cache_t_file = { }
-function _M.log(str, level)
+function _M.log(str, log_level, level)
 
 	str = str or ""
 	-- 1. 如果不是string 会将变量转换为字符串。
 	if type( str ) ~= "string" then
 		str = to_str( str )
 	end
+	
+	log_level = log_level or _M.INFO
 	
 	local file
 	if _M.rotateType == _M.DAY then
@@ -202,7 +208,7 @@ function _M.log(str, level)
 	-- 4. 每一行都要按照日志格式输出到日志文件中。
 	local slines = split(str, "\n")
 	for i, v in ipairs(slines) do
-		local line = str_fmt("[%s] [%s] [%s] %s\r\n", t, ngx.ctx[ LOGID ], position, v )
+		local line = str_fmt("[%s] [%s] [%-5s] [%30s] %s\r\n", t, ngx.ctx[ LOGID ], log_level, position, v )
 	--	local line = str_fmt("%s\n", v )
 		tf:write( line )
 		tf:flush()

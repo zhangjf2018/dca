@@ -6,16 +6,18 @@
 -- Copyright (C) 2016
 ---------------------------------------- 
 
-local redis  = require("resty.redis")
-local logger = loadmod("common.log.log")
+local redis      = require("resty.redis")
+local logger     = loadmod("common.log.log")
 local redis_conf = loadmod("conf.conf")
-local log    = logger.log
-local cjson = require("cjson")
+local log        = logger.log
+local cjson      = require("cjson")
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
-local TIME_OUT = 10 
+local TIME_OUT  = 10 
+local POOL_SIZE = 1000 
+local IDLE_TIME = 60
 
 function _M.new(self, config, timeout  )
     local red, err = redis:new()

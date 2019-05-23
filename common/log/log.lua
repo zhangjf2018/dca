@@ -29,7 +29,17 @@ end
 -- @param level 
 function _M.log ( str , level )
 	local lev = level or 3
-	write_log(str, lev) 
+	write_log(str, logger.INFO, lev) 
+end
+
+function _M.log_err( str, level)
+	local lev = level or 3
+	write_log(str, logger.ERROR, lev)
+end
+
+function _M.log_warn( str, level)
+	local lev = level or 3
+	write_log(str, logger.WARN, lev)
 end
 
 --- 监控日志

@@ -17,7 +17,7 @@
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
-local redis      = loadmod("common.redis.redis_cluster")
+local redis      = loadmod("common.redis.redis")
 local conf       = loadmod("conf.conf")
 local tools      = loadmod("common.tools.tools")
 local isEmpty    = tools.isEmpty
@@ -26,40 +26,49 @@ local isNull     = tools.isNull
 local isNotNull  = tools.isNotNull
 
 local string_format = string.format
-local product       = loadmod("constant.product")
 
 local function get_instance()
-	return redis.get_conn()
+	local cache, err = redis:new()
+	if not cache then
+		return nil, err
+	end
+	return cache, cache.db
 end
 
 local function get_key ( mch_id, product_id)
 	mch_id = mch_id or ""
 	product_id = product_id or ""
-	local redis_key = string_format("merchant_product:%s:%s", mch_id, product_id)
-	return redis_key
+	return string_format("merchant_product:%s:%s", mch_id, product_id)
 end
 
-function _M.query_merchant_product_by( mch_id, product_id )
+function _M.query_merchant_product_status_by( mch_id, product_id )
 	
 	local redis_key = get_key(mch_id, product_id)
-
-	local res, err = redis.get_table_by( redis_key )
-	if type( res ) ~= "table" then
+	local cache, db = get_instance()
+	if not cache then
 		return nil
 	end
 
-	return res
+	local res, err = db:get(redis_key .. ":status")
+	cache:close()
+
+	-- 必须存在字段判断
+	if isNotNull( res ) and isNotEmpty( res ) then
+		return res
+	end
+
+	return nil
 end
 
-function _M.update_merchant_product_by( mp_info )
+function _M.update_merchant_product_status_by( mp_info )
+	local cache, db = get_instance()
+	if not cache then
+		return -1 -- 连接异常
+	end
 	local redis_key = get_key(mp_info.mch_id, mp_info.product_id)
-	local ok, err = redis.update_key( redis_key, mp_info )
-	if not ok then
-		log_err(string_format("更新商户[%s][%s]Redis缓存失败,%s", mch_id, product_id, tostring(err)))
-		return nil
-	end
+	local res, err = db:set(redis_key .. ":status", mp_info.status)
+	cache:close()
 end
-
 
 return _M
 

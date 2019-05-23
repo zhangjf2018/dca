@@ -43,12 +43,14 @@ local secret_tool      = loadmod("public.secret_tool")
 local secdecrypt       = secret_tool.decrypt
 
 local merchantctl      = loadmod("database.public.merchantctl")
-local merchantproduct  = loadmod("database.redis.merchantproductdao")
+local productfee       = loadmod("database.redis.productfeedao")
 
 -- Global method 全局函数定义 (减少require代码) -- 
 errinfo          = loadmod("constant.errinfo")
 throw            = exception.throw
 log              = logger.log 
+log_err          = logger.log_err
+log_warn         = logger.log_warn
 json_decode      = cjson.decode
 json_encode      = cjson.encode
 isNull           = tools.isNull
@@ -81,25 +83,15 @@ local function query_check_merchantctl( args )
 	--local mer_key = "8d4646eb2d7067126eb08adb0672f7bb"
 	--local is_ok = check_sign( args, mer_key )
 	local ctl_info = merchantctl.query_merchantctl_by( args.mch_id )
-	log(cjson.encode(ctl_info))
-	local is_ok = check_sign( args, ctl_info.transkey )
-	if not is_ok then
+	local ok = check_sign( args, ctl_info.transkey )
+	if not ok then
 		throw( errinfo.CHECKSIGN_ERROR )
 	end
 	
 	-- 检查状态等
 	merchantctl.check_merchantctl( ctl_info )
 	merchantctl.check_merchant_product( args )
-	
-	local remain_count = merchantproduct.product_fee_count_by( args.mch_id )
-	if not remain_count then
-		throw( errinfo.DB_ERROR)
-	end
-	log("剩余次数："..tostring(remain_count))
-	if tonumber(remain_count) < 0 then
-		throw( errinfo.DB_ERROR, "超出调用次数" )
-	end
-	
+	merchantctl.check_product_fee( args )
 	
 	return ctl_info
 end
@@ -132,7 +124,7 @@ local function main()
   local ok, result = pcall ( b_service.process, args )
 
   if type(result) ~= "table" then
-  	log( tostring(result) )
+  	log_err( tostring(result) )
 		result = errinfo.SYSTEM_ERROR  -- 业务处理层必须返回table 数据，否则认为业务处理失败
 	end
 	-- 公共参数自动补全与签名
