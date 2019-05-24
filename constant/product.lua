@@ -9,14 +9,15 @@
 
 local string_gsub   = string.gsub
 local string_sub    = string.sub
+local string_format = string.format
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
--- ²úÆ·±àÂëÓëURIÓ³Éä¹ØÏµ
--- ´óĞ¡Ğ´Ãô¸Ğ
+-- äº§å“ç¼–ç ä¸URIæ˜ å°„å…³ç³»
+-- å¤§å°å†™æ•æ„Ÿ
 local PRODUCT_URL = {
-	-- ¶ÌĞÅ DCA-SMS-01
+	-- çŸ­ä¿¡ DCA-SMS-01
 	["sms.send"] = "DCA-SMS-01",
 	
 }
@@ -26,8 +27,8 @@ function _M.get_product_id( )
 	b_uri = string_sub(b_uri, 2)
 	local product_id = PRODUCT_URL[ b_uri ]
 	if not product_id then
-		log("·şÎñ½Ó¿Ú²»´æÔÚ"..uri)
-		throw(errinfo.DB_ERROR, "·şÎñ½Ó¿Ú²»´æÔÚ")
+		log_err( string_format("æœåŠ¡æ¥å£[%s]ä¸å­˜åœ¨",tostring(b_uri)))
+		throw(errinfo.DB_ERROR, "æœåŠ¡æ¥å£ä¸å­˜åœ¨")
 	end
 	return product_id, b_uri
 end

@@ -18,16 +18,10 @@ local mt = { __index = _M }
 
 _M.define = {
 
-out_trade_no  = { fmt = "^.{1,32}$",             mandatory = false  },
-device_info   = { fmt = "^.{1,32}$",             mandatory = false  },
-body          = { fmt = "^.{1,128}$",            mandatory = true   },
-attach        = { fmt = "^.{1,128}$",            mandatory = false  },
-total_fee     = { fmt = "^\\d{1,12}$",           mandatory = true   },
-auth_code     = { fmt = "^\\d{10,32}$",          mandatory = true   },
---notify_url    = { fmt = "^.{1,255}$",            mandatory = true  },
---time_start    = { fmt = "^.{1,14}$",             mandatory = false  },
---time_expire   = { fmt = "^.{1,14}$",             mandatory = false  },
-goods_tag     = { fmt = "^.{1,32}$",             mandatory = false  },
+msg_id        = { fmt = "^.{1,32}$",             mandatory = true  },
+tpl_id        = { fmt = "^.{1,32}$",             mandatory = true  },
+mobile        = { fmt = "^\\d{11}$",             mandatory = true  },
+param         = { fmt = "^.{1,256}$",            mandatory = true  },
 
 }
 

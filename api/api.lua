@@ -43,7 +43,7 @@ local secret_tool      = loadmod("public.secret_tool")
 local secdecrypt       = secret_tool.decrypt
 
 local merchantctl      = loadmod("database.public.merchantctl")
-local productfee       = loadmod("database.redis.productfeedao")
+local product          = loadmod("constant.product")
 
 -- Global method 全局函数定义 (减少require代码) -- 
 errinfo          = loadmod("constant.errinfo")
@@ -80,8 +80,9 @@ local function pack_resp( args, result, key )
 end
 
 local function query_check_merchantctl( args )
-	--local mer_key = "8d4646eb2d7067126eb08adb0672f7bb"
-	--local is_ok = check_sign( args, mer_key )
+	local product_id, uri = product.get_product_id()
+	log( string_format("产品为[%s][%s]", product_id, uri ) )
+	
 	local ctl_info = merchantctl.query_merchantctl_by( args.mch_id )
 	local ok = check_sign( args, ctl_info.transkey )
 	if not ok then
@@ -89,7 +90,6 @@ local function query_check_merchantctl( args )
 	end
 	
 	-- 检查状态等
-	merchantctl.check_merchantctl( ctl_info )
 	merchantctl.check_merchant_product( args )
 	merchantctl.check_product_fee( args )
 	

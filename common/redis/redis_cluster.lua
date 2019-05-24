@@ -10,7 +10,12 @@ local redis_cluster  = require("resty.rediscluster")
 local logger         = loadmod("common.log.log")
 local redis_conf     = loadmod("conf.conf")
 local log            = logger.log
+local log_err        = logger.log_err
 local cjson          = require("cjson.safe")
+local tools          = loadmod("common.tools.tools")
+
+local isNull         = tools.isNull
+local isEmpty        = tools.isEmpty
 
 local string_format  = string.format
 
@@ -46,6 +51,7 @@ function _M.update_key( redis_key, tb )
 	
 	return ok, err
 end
+
 
 return _M
 

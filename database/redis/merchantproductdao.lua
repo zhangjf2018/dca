@@ -44,9 +44,6 @@ function _M.query_merchant_product_by( mch_id, product_id )
 	local redis_key = get_key(mch_id, product_id)
 
 	local res, err = redis.get_table_by( redis_key )
-	if type( res ) ~= "table" then
-		return nil
-	end
 
 	return res
 end
@@ -55,7 +52,7 @@ function _M.update_merchant_product_by( mp_info )
 	local redis_key = get_key(mp_info.mch_id, mp_info.product_id)
 	local ok, err = redis.update_key( redis_key, mp_info )
 	if not ok then
-		log_err(string_format("更新商户[%s][%s]Redis缓存失败,%s", mch_id, product_id, tostring(err)))
+		log_err(string_format("更新商户Redis[%s]缓存失败,%s", redis_key, tostring(err)))
 		return nil
 	end
 end

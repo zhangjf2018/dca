@@ -40,6 +40,7 @@ tb = cjson.decode(tb)
 return cjson.encode(tb)
 ]]
 
+--[[
 local keys = {
 test = "test",
 name = "name",
@@ -50,3 +51,4 @@ local rs,err = red_c:eval(SCRIPT, 0 , cjson.encode(keys))
 ngx.say(rs)
 ngx.say(cjson.encode(rs))
 ngx.say(v)
+]]
