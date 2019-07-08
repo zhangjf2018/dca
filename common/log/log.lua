@@ -42,6 +42,11 @@ function _M.log_warn( str, level)
 	write_log(str, logger.WARN, lev)
 end
 
+function _M.log_debug( str, level)
+	local lev = level or 3
+	write_log(str, logger.DEBUG, lev)
+end
+
 --- 监控日志
 --  记录系统每笔交易的状态，以便快速定位查看和定位
 -- @param args 交易参数

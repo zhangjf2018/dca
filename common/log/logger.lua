@@ -104,9 +104,10 @@ _M.DAY  = 1
 _M.HOUR = 2
 _M.rotateType = _M.DAY
 
-_M.INFO  = "INFO"
-_M.ERROR = "ERROR"
-_M.WARN  = "WARN"
+_M.INFO   = "INFO"
+_M.ERROR  = "ERROR"
+_M.WARN   = "WARN"
+_M.DEBUG  = "DEBUG"
 
 --- 设置记录日志文件的类型。
 -- @param rotateType 要设定的类型。 
