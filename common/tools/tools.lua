@@ -186,9 +186,17 @@ function _M.isEmpty( str )
 		end
 		return false
 	end
-	if str == nil or #str == 0 then
+	
+	if str == nil then
 		return true
 	end
+	
+	if type(str) == "string" then
+		if #str == 0 then
+			return true
+		end
+	end
+	
 	return false
 end
 

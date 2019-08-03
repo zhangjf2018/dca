@@ -31,11 +31,13 @@ function _M.get_conn(config)
 end
 
 function _M.get_table_by( redis_key )
+
 	local red_c = _M.get_conn()
 	local rs, err = red_c:get( redis_key )
 	if isNull(rs) or isEmpty(rs) then
-		log_err( string_format( "获取redis[%s]数据失败,超时或不存在,失败信息[%s]",  redis_key, tostring(err)) )
+		log_err( string_format( "Redis获取[%s]数据超时或不存在,失败信息[%s]",  redis_key, tostring(err)) )
 	end
+	log("**res*")
 	return cjson.decode(rs), err
 end
 
@@ -46,7 +48,7 @@ function _M.update_key( redis_key, tb )
 	end
 	local ok, err = red_c:set( redis_key, tb )
 	if not ok then
-		log_err( string_fromat("设置redis[%s][%s]失败,失败信息[%s]", redis_key, tb, tostring(err)) )
+		log_err( string_fromat("Redis设置[%s][%s]失败,失败信息[%s]", redis_key, tb, tostring(err)) )
 	end
 	
 	return ok, err

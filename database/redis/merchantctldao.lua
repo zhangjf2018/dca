@@ -26,15 +26,13 @@ local isNull     = tools.isNull
 local isNotNull  = tools.isNotNull
 
 local function get_key ( key )
-	key = key or ""
-	local redis_key = "merchantctl:"..key
-	return redis_key
+	return "merchant_ctl:".. key
 end
 
 function _M.query_merchantctl_by( mch_id )
 	
 	local redis_key = get_key(mch_id)
-
+	log("redis_key: ".. redis_key)
 	local res, err = redis.get_table_by( redis_key )
 	if type(res) ~= "table" then
 		return nil
@@ -53,6 +51,7 @@ end
 
 function _M.update_merchantctl_by( ctlinfo )
 	local redis_key = get_key( ctlinfo.mch_id )
+	log("redis_key: ".. redis_key)
 	local ok, err = redis.update_key( redis_key, ctlinfo )
 end
 

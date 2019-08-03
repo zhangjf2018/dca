@@ -25,18 +25,26 @@ function tb:test_01_smsSend()
 		local uid = uuid.new("time")
 		local sign_key = "8d4646eb2d7067126eb08adb0672f7bb"
 		
+		local param = {
+			code = "123891",
+		}
+		
 	  local data = {
         charset = "utf-8",
         nonce_str = string.gsub(uid, "-", ""),
         mch_id = "201904240000001",
         sign_type = "HMAC-SHA256",
+        
+        tpl_id = "tpl_123",
+        mobile = "18676735953",
+        param = cjson.encode(param),
     }
     
     local sign = interface_sign.sign( data , sign_key )
 		data.sign = sign
 
 		local body = pack.query_string( data )
-
+		ngx.say("REQUEST: [" .. body.."]")
     local res = ngx.location.capture(
         "/sms/send",
         { method = ngx.HTTP_POST, body=[[{"type":[1600,1700]}]], args=body }
@@ -45,7 +53,7 @@ function tb:test_01_smsSend()
     if 200 ~= res.status then
         error("/sms/send code:" .. res.status)
     end
-
+		ngx.say("RESPONSE: [" .. res.body.."]")
     local restab,err = cjson.decode(res.body)
     if not restab then
         error("/sms/send error:" .. tostring(err))

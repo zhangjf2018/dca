@@ -18,7 +18,6 @@ local mt = { __index = _M }
 
 _M.define = {
 
-msg_id        = { fmt = "^.{1,32}$",             mandatory = true  },
 tpl_id        = { fmt = "^.{1,32}$",             mandatory = true  },
 mobile        = { fmt = "^\\d{11}$",             mandatory = true  },
 param         = { fmt = "^.{1,256}$",            mandatory = true  },

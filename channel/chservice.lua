@@ -10,10 +10,10 @@
 
 --]]
 
-local monitor = loadmod("channel.common.monitor")
+local monitor   = loadmod("channel.common.monitor")
 local channelmonitor = monitor.channelmonitor
-local logtool = loadmod("common.log.log" )
-local log     = logtool.log
+local logtool   = loadmod("common.log.log" )
+local log       = logtool.log
 local exception = loadmod("common.exception.exception")
 local throw     = exception.throw
 local tools     = loadmod("common.tools.tools")
@@ -51,7 +51,7 @@ function _M.process( script, func, args, router )
 		log( tostring( result ) )
 		result = errinfo.SYSTEM_ERROR
 	end
-
+	
 	channelmonitor( args, result, trans_start_time ) 
 	
 	return result

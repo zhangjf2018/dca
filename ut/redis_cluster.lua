@@ -52,3 +52,26 @@ ngx.say(rs)
 ngx.say(cjson.encode(rs))
 ngx.say(v)
 ]]
+
+local SC =[[
+local step = %d;
+local value=redis.call('get', KEYS[1]);
+if not value or tonumber(value) <= 0 then 
+	return {0,0} 
+end;
+
+if tonumber(value)<step then
+	return {0,0}
+end
+
+return {redis.call('decrby', KEYS[1], step),value};
+]]
+
+local SC = "local step=%d;local value=redis.call('get', KEYS[1]);if not value or tonumber(value) <= 0 then return {0,0} end;if tonumber(value)<step then return {0,0} end;return {redis.call('decrby', KEYS[1], step),value};"
+
+
+ngx.say("*****")
+SC = string.format(SC, 1)
+local rs,err = red_c:eval(SC, 1 , "cnt")
+ngx.say(rs)
+

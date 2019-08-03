@@ -13,226 +13,155 @@
 		trade_no 系统流水号组成 商户号 + 日期 + ssn
 --]]
 
-local tools = loadmod("common.tools.tools")
-local load_lua = tools.load_lua
-local commtool = loadmod("common.tools.commtool")
-local orderdao = loadmod("database.mobilepayment.orderdao")
-local indexdao = loadmod("database.mobilepayment.indexdao")
-local routerdao = loadmod("database.mobilepayment.routerdao")
-local con_hash = loadmod("common.consistent.hashtool")
-local utils    = loadmod("public.utils")
-local os_date  = os.date
-local tonumber = tonumber
-local get_jhash_order = con_hash.get_jhash_order
-local indexdao_insert = indexdao.insert
-local getssn   = utils.getssn
+local tools       = loadmod("common.tools.tools")
+local load_lua    = tools.load_lua
+local commtool    = loadmod("common.tools.commtool")
+local cjson       = require("cjson.safe")
+local product     = loadmod("constant.product")
+local utils       = loadmod("public.utils")
+local getssn      = utils.getssn
+local feeutil     = loadmod("public.feeutil")
+local smsoperator = loadmod("constant.smsoperator")
+local os_date     = os.date
+local tonumber    = tonumber
+local string_gsub = string.gsub
+local string_format = string.format
+local chservice   = loadmod("channel.chservice")
+local chprocess   = chservice.process
+
+local smstpl      = loadmod("database.public.smstpl")
+local merchantctl = loadmod("database.public.merchantctl")
+local smsrouter   = loadmod("database.public.smsrouter")
+local productfee  = loadmod("database.public.productfee")
+
+local smsflow     = loadmod("database.dca.smsflowdao")
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
 
-local prefixs = {
-    ["10"]="WXSCAN",
-    ["11"]="WXSCAN",
-    ["12"]="WXSCAN",
-    ["13"]="WXSCAN",
-    ["14"]="WXSCAN",
-    ["15"]="WXSCAN",
-    ["25"]="ZFBSCAN",
-    ["26"]="ZFBSCAN",
-    ["27"]="ZFBSCAN",
-    ["28"]="ZFBSCAN",
-    ["29"]="ZFBSCAN",
-    ["30"]="ZFBSCAN",
-}
 
-local function get_trade_type( auth_code )
-	log("auth_code:"..auth_code)
-	local prefix = auth_code:sub(1,2)
-	local trade_type = prefixs[prefix]
+local function channel_process(args, sys_param)
 	
-	if not trade_type then
-		throw( errinfo.AUTH_CODE_INVALID )
-	end
-
-	return trade_type
+	local bank_script = string_format( "channel.bank.%s.sms.sms", sys_param.ch_id )
+	-- 执行脚本位置 函数 请求参数 系统参数
+	local ch_result = chprocess( bank_script, "sms_send", args, sys_param )
+	
+	return ch_result
 end
 
---- 处理订单index
--- @return order_info 已存在，但未支付订单 
-local function insert_index(out_trade_no, mch_id, t_date, node, args )
-	local index = {
-		out_trade_no = out_trade_no,
-		mch_id       = mch_id,
-		transdate    = t_date,
+local function get_sms_content(param, tpl_sig, tpl) 
+	local p = cjson.decode(param)
+	if not p then
+		throw( errinfo.DB_ERROR, "模板参数错误,必须为JSON")
+	end
+	
+	for k, v in pairs(p) do
+		k = "#" .. k .. "#"
+		tpl = string_gsub(tpl, k, v)
+	end
+	
+	local sms_content = string_format("【%s】%s", tpl_sig, tpl)
+	
+	return sms_content
+end
+
+local function get_sms_fee_cnt( sms_content )
+	
+	local _, sms_len = string_gsub(sms_content, "[^\128-\193]", "")
+	if sms_len > 300 then
+		throw(errinfo.DB_ERROR, "短信内容超过300个字")
+	end
+	local fee_cnt = 1
+	while( sms_len > 70 ) 
+		do
+		sms_len = sms_len - 67
+		fee_cnt = fee_cnt + 1
+	end
+	
+	return fee_cnt
+end
+
+local function save_flow( args, product_id, operator, fee, fee_cnt, single_fee, ssn, router, trans_date )
+	local cols = {
+		mch_id     = args.mch_id,
+		product_id = product_id,
+		msg_id     = args.msg_id,
+		sid        = ssn,
+		mobile     = args.mobile,
+		operator   = operator,
+		status     = "0",
+		tpl_id     = args.tpl_id,
+		fee_cnt    = fee_cnt,
+		fee        = fee,
+		ch_id      = router.ch_id,
+		ch_msg_id  = "",
+		ch_tpl_id  = "",
+		retcode    = "",
+		retmsg     = "",
 	}
-	local ret, db = indexdao.insert( index, node )
-	local ot_date = ""
-	-- 插入失败
-	if ret ~= 0 then
-			-- 数据已存在
-			if ret == 1 then 
-				log("订单存在于index表:"..mch_id..":"..out_trade_no)
-				-- 获取交易所在流水表时间
-				ot_date = indexdao.query_date_by( mch_id, out_trade_no, node )
-				if #ot_date == 0 then
-					log("查询异常")
-					throw( errinfo.PAYMENT_FAIL )
-				end
-				
-				local order_info = orderdao.query_order_by( mch_id, out_trade_no, ot_date ) 
-				log(order_info)
-				if not order_info then
-					log("订单查询异常")
-					throw( errinfo.PAYMENT_FAIL )
-				end
-				
-				if order_info.trade_state ~= "NOTPAY" then
-					log("订单已支付")
-					throw( errinfo.ORDER_PAID )
-				end
-				local total_fee   = args.total_fee or ""
-				local device_info = args.device_info or ""
-				local body        = args.body or ""
-				local attach      = args.attach or ""
-				if order_info.total_fee ~= total_fee or 
-					order_info.device_info ~= device_info or
-					order_info.body ~= body or
-					order_info.attach ~= attach then
-						log("商户订单号重复")
-						throw( errinfo.OUT_TRADE_NO_USED )
-				end		
-			else
-				-- 数据插入其他异常
-				log("index 插入异常")
-				throw( errinfo.PAYMENT_FAIL )
-			end
-	end
-end
-
-local function insert_order( mch_id, out_trade_no, trade_type, t_date, t_time, args  )
-	local orderinfo = {
-		--- 接口上送数据
-		mch_id       = mch_id,
-		out_trade_no = out_trade_no,
-		device_info  = args.device_info,
-		total_fee    = args.total_fee,
-		body         = args.body,
-		attach       = args.attach,	
-		sign_type    = args.sign_type,
-		
-		--- 系统数据
-		trade_type   = trade_type, 
-		transdate    = t_date,
-		transtime    = t_time,
-		trade_state  = "NOTPAY",
-	}
-
-	local ret = orderdao.insert( orderinfo, t_date )
-	if ret ~= 0 then
-		log("订单插入失败")
-		throw( errinfo.PAYMENT_FAIL )
-	end
-end
-
-local function get_router( mch_id, trade_type  )
-	local router = routerdao.query_router_by( mch_id, trade_type, "1")
-	if not router then
-		log("路由获取失败")
-		throw( errinfo.PAYMENT_FAIL )
-	end
-	return router
-end
-
-local function get_trade_no( mch_id, t_date, o_order_info )
-	local trade_no = ""
-	if o_order_info and o_order_info.trade_no then -- 订单存在但未支付
-		trade_no = o_order_info.trade_no -- 使用原系统流水号
-	else
-		local ssn = getssn( )
-		if not ssn then
-			log("获取系统流水号失败")
-			throw( errinfo.PAYMENT_FAIL )
-		end
-		trade_no  = mch_id .. t_date .. ssn 
-	end
 	
-	return trade_no
-end
-
-local function update_order (trade_no, result, router, mch_id, out_trade_no, total_fee, t_date )
-	local upcols = {
-		trade_no     = trade_no,
-		bank_ssn     = result.bank_ssn,
-		time_end     = result.time_end,
-		exmch_id     = router.exmch_id,
-		channel_id   = router.channel_id,
-		trade_state  = result.trade_state,
-		is_subscribe = result.is_subscribe,
-		retcode      = result.retcode,
-	}
-	-- 更新订单
-	local ret = orderdao.update_order_by( mch_id, out_trade_no, total_fee, t_date, upcols )
-
-end
-
-local function channel_process(args, router  )
-	local channel = router.channel_id
-	local s_channel = "service.pay.trade.micropay.ch" .. channel
-	local s_script, err_ = load_lua( s_channel )
 	
-	if not s_script then
-		log( err_ ) 
-		throw( errinfo.PAYMENT_FAIL )
-	end
+	smsflow.insert(cols, trans_date)
 	
-	local result = s_script.process( args , router )
-	return result
 end
 
 function _M.process( args )
-	
-	--[[ trade_type
-	WXJSAPI   微信公众号跳转支付
-	WXQRCODE  微信正扫
-	WXSCAN    微信反扫
-	ZFBQRCODE 支付宝正扫
-	ZFBSCAN   支付宝反扫
-	ZFBJSAPI  支付宝服务窗
-	]]--
-	log("-------micropay service start---------")
-	local mch_id = args.mch_id
-	local out_trade_no = args.out_trade_no
-	--out_trade_no = tools.gen_ssn()
-	local trade_type = get_trade_type( args.auth_code )
-	args.total_fee = tonumber( args.total_fee ) 
-	local total_fee = args.total_fee
-	
-	local dates = os_date( "%Y%m%d%H%M%S" )
-	local t_date = dates:sub(1,8)
-	local t_time = dates:sub(-6)
-	local node = get_jhash_order( args.out_trade_no )
-	
-  -- 入库index 表
-	local o_order_info = insert_index(out_trade_no, mch_id, t_date, node, args) 
 
-	if not o_order_info or not o_order_info.trade_no then -- 订单不存在
-		insert_order( mch_id, out_trade_no, trade_type, t_date, t_time, args) -- 订单入库
+	local mch_id = args.mch_id
+	local msg_id = args.msg_id
+	local tpl_id = args.tpl_id
+	local mobile = args.mobile
+	local param  = args.param
+	
+	local product_id, uri = product.get_product_id()
+	local operator    = smsoperator.get_operator( mobile )
+	local tpl_info    = smstpl.query_smstpl_by( mch_id, product_id, tpl_id )
+	local sms_content = get_sms_content(param, tpl_info.tpl_sig, tpl_info.tpl)
+	log(string_format("短信发送至[%s:%s]内容为[%s]", mobile, operator, sms_content))
+	local fee_cnt     = get_sms_fee_cnt(sms_content)
+	local product_fee = productfee.get_product_fee( mch_id, product_id )
+	
+	local single_fee = feeutil.cal_fee( product_fee.fee_method, product_fee.fee_rate )
+	local fee = fee_cnt * single_fee
+	
+	local ssn = utils.getssn()
+	
+	local router = smsrouter.query_sms_router_by( mch_id, product_id, operator )
+
+	local sms_param = {
+		sms_content = sms_content,
+		msg_id      = ssn,	
+		fee_cnt     = fee_cnt,
+		product_id  = product_id,
+		ch_id       = router.ch_id,
+		tpl         = tpl_info.tpl,
+		tpl_id      = tpl_info.tpl_id,
+	}
+
+	-- 执行计费
+	local remain_cnt = productfee.check_remain_count(mch_id, product_id, fee_cnt)
+	
+	local trans_date = os_date("%Y%m%d")
+	--save_flow( args, product_id, operator, fee, fee_cnt, single_fee, ssn, router, trans_date ) 
+
+	local ch_result = channel_process(args, sms_param)
+
+	-- 渠道返回 0000 计费
+	if ch_result.retcode ~= "0000"  then
+		productfee.rollback_remain_count(mch_id, product_id, fee_cnt)
+		fee_cnt = 0
 	end
 	
-	-- 获取路由
-	local router = get_router( mch_id, trade_type )
-	-- 取系统流水号
-	local trade_no = get_trade_no( mch_id, t_date, o_order_info )
-
-	args.trade_no   = trade_no
-	args.exmch_id   = router.exmch_id
-	args.channel_id = router.channel_id
-	args.trade_type = trade_type
-	
-	-- 送渠道处理
-	local result = channel_process( args, router )
-
-	update_order (trade_no, result, router, mch_id, out_trade_no, total_fee, t_date )
+	local result = {
+		fee_cnt = fee_cnt,
+		retcode = "0000",
+		retmsg = "success",
+		msg_id = ssn,
+		mobile = mobile,
+		tpl_id = tpl_id,
+		status = "",	
+		
+	}
 	
 	return result
 end

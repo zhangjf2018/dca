@@ -91,7 +91,6 @@ local function query_check_merchantctl( args )
 	
 	-- 检查状态等
 	merchantctl.check_merchant_product( args )
-	merchantctl.check_product_fee( args )
 	
 	return ctl_info
 end

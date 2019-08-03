@@ -104,10 +104,10 @@ _M.DAY  = 1
 _M.HOUR = 2
 _M.rotateType = _M.DAY
 
-_M.INFO   = "INFO"
-_M.ERROR  = "ERROR"
-_M.WARN   = "WARN"
-_M.DEBUG  = "DEBUG"
+_M.INFO   = "I"
+_M.ERROR  = "E"
+_M.WARN   = "W"
+_M.DEBUG  = "D"
 
 --- 设置记录日志文件的类型。
 -- @param rotateType 要设定的类型。 
@@ -209,7 +209,7 @@ function _M.log(str, log_level, level)
 	-- 4. 每一行都要按照日志格式输出到日志文件中。
 	local slines = split(str, "\n")
 	for i, v in ipairs(slines) do
-		local line = str_fmt("[%s] [%s] [%-5s] [%30s] %s\r\n", t, ngx.ctx[ LOGID ], log_level, position, v )
+		local line = str_fmt("[%s] [%s] [%s] [%30s] %s\r\n", t, ngx.ctx[ LOGID ], log_level, position, v )
 	--	local line = str_fmt("%s\n", v )
 		tf:write( line )
 		tf:flush()

@@ -23,7 +23,7 @@ local get_conn = daotool.get_conn
 
 function _M.query_product_fee_by( mch_id, product_id )
 	log(mch_id..":"..product_id)
-	local sql_fmt = "select mch_id, product_id, fee_mode, total_num, remain_num from product_fee where mch_id=%s and product_id=%s limit 1 "
+	local sql_fmt = "select mch_id, product_id, fee_mode, total_num, remain_num, fee_method, fee_rate from product_fee where mch_id=%s and product_id=%s limit 1 "
 	local sql = string.format( sql_fmt, ngx.quote_sql_str(mch_id), ngx.quote_sql_str(product_id))
 	local db = get_conn( )
 	

@@ -12,6 +12,7 @@ local commtool      = loadmod("common.tools.commtool")
 local ssntool       = loadmod("common.tools.next")
 local get_sys_ssn   = ssntool.get_ssn 
 local string_format = string.format
+local os_date       = os.date 
 
 local _M = { _VERSION = '0.01' }
 local mt = { __index = _M }
@@ -25,7 +26,10 @@ function _M.getssn( step )
 	if not ssn then
 		return nil
 	end
-	return ssn.lastssn
+	
+	local seq = os_date("%Y%m%d%H%M%S") .. ssn.lastssn
+	
+	return seq
 end
 
 function _M.log_args( args )

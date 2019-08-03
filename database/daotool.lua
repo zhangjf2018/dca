@@ -20,6 +20,11 @@ local mt = { __index = _M }
 local mysql = loadmod("common.mysql.mysql")
 local conf  = loadmod("conf.conf")
 
+local string_format = string.format
+local table_concat  = table.concat
+local pairs         = pairs
+local type          = type 
+
 function _M.gen_insert_sql(tablename, clos) 
 
 	local fields_name = {}
@@ -29,15 +34,15 @@ function _M.gen_insert_sql(tablename, clos)
 		fields_name[#fields_name + 1] = k
 		if type(v) == "number" then
 		else
-			v = string.format("'%s'", v)
+			v = string_format("'%s'", v)
 		end
 		fields_value[#fields_value + 1] = v
 	end
 
-	fields_name = table.concat(fields_name, ",")
-	fields_value = table.concat(fields_value, ",")
+	fields_name = table_concat(fields_name, ",")
+	fields_value = table_concat(fields_value, ",")
 	
-	local sql = string.format("insert into %s (%s) values (%s)", tablename, fields_name, fields_value)
+	local sql = string_format("insert into %s (%s) values (%s)", tablename, fields_name, fields_value)
 	
 	return sql
 end
@@ -51,7 +56,7 @@ function _M.gen_update_sql(tablename, condition, upcols )
 
 		if type(v) == "number" then
 		else
-			v = string.format("'%s'", v)
+			v = string_format("'%s'", v)
 		end
 		upstr = upstr.. k.."="..v..","
 	end
@@ -61,13 +66,13 @@ function _M.gen_update_sql(tablename, condition, upcols )
 
 		if type(v) == "number" then
 		else
-			v = string.format("'%s'", v)
+			v = string_format("'%s'", v)
 		end
 		constr = constr.. k.."="..v.." and "
 	end
 	constr = constr:sub(1, #constr - 4 )
 
-	local sql = string.format("update %s %s where %s ", tablename, upstr, constr)
+	local sql = string_format("update %s %s where %s ", tablename, upstr, constr)
 	
 	return sql
 end
@@ -99,6 +104,30 @@ function _M.get_conn( db )
 	end
 	
 	return db
+end
+
+function _M.query( sql )
+	local db = _M.get_conn( )
+	
+	if not db then
+		-- 获取连接异常
+		return nil, -1
+	end
+	
+	local rs, err_, errno  = db:query( sql )
+	if not rs then
+		log(tostring(err_) .. ":"..errno)
+		return nil, -1
+	end
+	
+	db:close() -- 正常则保存连接
+
+	if not rs[1] then
+		-- 数据不存在
+		return {}, 1
+	end
+
+	return rs[1], 0
 end
 
 return _M

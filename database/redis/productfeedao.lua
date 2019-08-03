@@ -55,11 +55,16 @@ function _M.query_product_fee_by( mch_id, product_id )
 end
 
 local REDIS_COUNTER_SCRIPT = "local value=redis.call('get', KEYS[1]);if not value or tonumber(value) <= 0 then return {0,0} end;return {redis.call('decr', KEYS[1]),value};"
-function _M.product_fee_count_by( mch_id )
+local REDIS_COUNTER_STEP_SCRIPT = "local step=%d;local value=redis.call('get', KEYS[1]);if not value or tonumber(value) <= 0 then return {0,0} end;if tonumber(value)<step then return {0,0} end;return {redis.call('decrby', KEYS[1], step),value};"
+function _M.product_fee_count_by( mch_id, product_id, step )
 
-	local product_id, uri = product.get_product_id()
-	
+	if isNotEmpty(step) and tonumber(step)>1 then
+		step = tonumber(step)
+		REDIS_COUNTER_SCRIPT= string_format(REDIS_COUNTER_STEP_SCRIPT, step)
+	end
+	log( "计费笔数: ".. step )
 	local redis_key = get_key(mch_id, product_id, "total_num")
+	log("redis_key: " .. redis_key)
 	local db = get_instance()
 	if not db then
 		return nil
@@ -73,6 +78,26 @@ function _M.product_fee_count_by( mch_id )
 	end
 
 	return dec_res
+end
+
+function _M.product_fee_count_rollback_by( mch_id, product_id, step )
+	if isEmpty(step) then
+		step = 1
+	end
+	log( "恢复计费笔数: ".. step )
+	local redis_key = get_key(mch_id, product_id, "total_num")
+	local db = get_instance()
+	if not db then
+		return nil
+	end
+	local rs, err = db:incrby( redis_key, step )
+	if not rs then
+		log_err(string_format("恢复计数器[%s][%s]失败,%s", redis_key, step, tostring(err)))
+	end
+	
+	log( string_format("已恢复[%s],恢复后[%s]", step, rs ))
+	
+	return rs
 end
 
 function _M.update_product_fee_by( product_fee )
