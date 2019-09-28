@@ -21,15 +21,18 @@ local mysql   = loadmod("common.mysql.mysql")
 local daotool = loadmod("database.daotool")
 local daotool_gen_insert_sql = daotool.gen_insert_sql
 local daotool_gen_update_sql = daotool.gen_update_sql
+local daotool_update         = daotool.update
 local get_conn = daotool.get_conn
 
-local function create_flow_table( transdate, db )
+local TABLE_PRFIX = "sms_flow"
+
+local function create_flow_table( trans_date, db )
 	local sql_fmt=[[
 CREATE TABLE `sms_flow%s` (
 	`mch_id` VARCHAR(15) NULL DEFAULT NULL COMMENT '商户号',
 	`product_id` VARCHAR(15) NULL DEFAULT NULL COMMENT '产品ID',
 	`msg_id` VARCHAR(32) NULL DEFAULT NULL COMMENT '短信标识',
-	`sid` VARCHAR(32) NULL DEFAULT NULL COMMENT '系统短信标识',
+	`tradeno` VARCHAR(32) NULL DEFAULT NULL COMMENT '系统短信标识',
 	`mobile` VARCHAR(11) NULL DEFAULT NULL COMMENT '手机号',
 	`operator` VARCHAR(5) NULL DEFAULT NULL COMMENT '运行商',
 	`status` VARCHAR(2) NULL DEFAULT NULL COMMENT '发送状态 0：发送成功 1初始',
@@ -43,14 +46,17 @@ CREATE TABLE `sms_flow%s` (
 	`retmsg` VARCHAR(60) NULL DEFAULT NULL COMMENT '系统返回信息',
 	`create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
 	`update_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-	UNIQUE INDEX `idx_u_mchid_productid_sid` (`mch_id`, `product_id`, `sid`)
+	UNIQUE INDEX `idx_u_mchid_productid_tradeno` (`mch_id`, `product_id`, `tradeno`)
 )
 COLLATE='utf8_general_ci'
 ENGINE=InnoDB
 ;
 ]]
-	local sql = string.format(sql_fmt, transdate )
-	db:query(sql)
+	local sql = string.format(sql_fmt, trans_date )
+	local rs, err_, errno = db:query(sql)
+	if not rs then
+		log_err( tostring(err_) )
+	end
 end
 
 --- 插入数据
@@ -58,9 +64,9 @@ end
 -- @param transdate 交易日期，表名用到
 -- @param _db 数据库连接
 -- @return -1 数据库链接失败，0 插入成功， 1 数据已存在， 2 数据库操作异常
-function _M.insert(cols, transdate )
+function _M.insert(cols, trans_date )
 	
-	local tablename = "sms_flow"..transdate
+	local tablename = TABLE_PRFIX .. trans_date
 	local sql = daotool_gen_insert_sql( tablename, cols )
 	
 	local db = get_conn( )
@@ -71,7 +77,7 @@ function _M.insert(cols, transdate )
 	
 	if not rs and errno == 1146 then   -- 表不存在
 		log(tostring(err_) .. ":"..tostring(errno))
-		create_flow_table( transdate, db )
+		create_flow_table( trans_date, db )
 		rs, err_, errno = db:query(sql)    -- 再做一次
 	end
 	
@@ -93,6 +99,15 @@ function _M.insert(cols, transdate )
 		return 2
 	end
 	return 0
+end
+
+function _M.update( upcols, condition, trans_date) 
+	
+	local tablename = TABLE_PRFIX .. trans_date
+	local sql = daotool_gen_update_sql( tablename, condition, upcols )
+	
+	local ret = daotool_update( sql )
+	return ret
 end
 
 

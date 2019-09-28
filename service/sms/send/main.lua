@@ -86,7 +86,7 @@ local function save_flow( args, product_id, operator, fee, fee_cnt, single_fee, 
 		mch_id     = args.mch_id,
 		product_id = product_id,
 		msg_id     = args.msg_id,
-		sid        = ssn,
+		tradeno    = ssn,
 		mobile     = args.mobile,
 		operator   = operator,
 		status     = "0",
@@ -102,6 +102,27 @@ local function save_flow( args, product_id, operator, fee, fee_cnt, single_fee, 
 	
 	
 	smsflow.insert(cols, trans_date)
+	
+end
+
+function update_flow(args, product_id, ssn, transdate, ch_result)
+	
+	local upcols = {
+		ch_msg_id = ch_result.ch_msg_id,
+		ch_tpl_id = ch_result.ch_tpl_id,
+		retcode   = ch_result.retcode,
+		retmsg    = ch_result.retmsg,
+			
+	}
+	
+	local conditions = {
+		mch_id     = args.mch_id,
+		product_id = product_id,
+		tradeno    = ssn,
+			
+	}
+	
+	smsflow.update( upcols, conditions, transdate )
 	
 end
 
@@ -142,7 +163,7 @@ function _M.process( args )
 	local remain_cnt = productfee.check_remain_count(mch_id, product_id, fee_cnt)
 	
 	local trans_date = os_date("%Y%m%d")
-	--save_flow( args, product_id, operator, fee, fee_cnt, single_fee, ssn, router, trans_date ) 
+	save_flow( args, product_id, operator, fee, fee_cnt, single_fee, ssn, router, trans_date ) 
 
 	local ch_result = channel_process(args, sms_param)
 
@@ -151,6 +172,8 @@ function _M.process( args )
 		productfee.rollback_remain_count(mch_id, product_id, fee_cnt)
 		fee_cnt = 0
 	end
+	
+	update_flow(args, product_id, ssn, trans_date, ch_result)
 	
 	local result = {
 		fee_cnt = fee_cnt,

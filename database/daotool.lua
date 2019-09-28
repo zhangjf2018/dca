@@ -105,7 +105,7 @@ function _M.get_conn( db )
 	
 	return db
 end
-
+-- flag -1 连接MySQL失败 0 存在记录 1 不存在记录
 function _M.query( sql )
 	local db = _M.get_conn( )
 	
@@ -128,6 +128,23 @@ function _M.query( sql )
 	end
 
 	return rs[1], 0
+end
+
+-- flag -1 连接MySQL失败 其余为更新条数
+function _M.update( sql )
+	local db = _M.get_conn( )
+	if not db then
+		return -1
+	end
+	local rs, err_, errno  = db:query( sql )
+	if not rs then
+		log(tostring(err_) .. ":"..tostring(errno))
+		return -1
+	end
+	
+	db:close() -- 正常则保存连接
+	
+	return rs.affected_rows
 end
 
 return _M

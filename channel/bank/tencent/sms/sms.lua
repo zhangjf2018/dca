@@ -120,8 +120,9 @@ function _M.sms_send( args, sys_param )
 	-- 转换为内部数据
 	--local resp = packresp( result, trade_type )	
 	local resp = {
-		retcode = "0001"
-		}
+		ch_tpl_id = chtpl.ch_tpl_id,
+		retcode = "0000"
+	}
 	log(" -- bank ceb micropay process end -- ")
 	return resp 
 end
